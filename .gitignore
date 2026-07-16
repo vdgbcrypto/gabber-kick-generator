@@ -1,0 +1,14 @@
+# Build artifacts
+build/
+_build/
+out/
+cmake-build-*/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.user
+
+# IDE
+.vscode/
+.idea/
