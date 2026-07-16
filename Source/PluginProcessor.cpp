@@ -38,7 +38,7 @@ juce::AudioProcessorEditor* GabberKickGeneratorAudioProcessor::createEditor()
 
 void GabberKickGeneratorAudioProcessor::prepareToPlay(double sr, int)
 {
-    sampleRate = sr;
+    sampleRate.store(sr);
     osc.prepare({ sr, 1, 1 });
     osc.setFrequency(45.0f);
     pPitchStart = apvts.getRawParameterValue("PITCH_START");
@@ -57,6 +57,7 @@ void GabberKickGeneratorAudioProcessor::processBlock(juce::AudioBuffer<float>& b
     const int n = buffer.getNumSamples();
     const int ch = getTotalNumOutputChannels();
     buffer.clear();
+    const double sr = sampleRate.load(); // atomic read once per block
     const float base = pBaseNote->load();
 
     // MIDI trigger (audio-thread): note-on herstart envelopen + phase
@@ -71,9 +72,9 @@ void GabberKickGeneratorAudioProcessor::processBlock(juce::AudioBuffer<float>& b
             const float pDec = pPitchDecay->load() / 1000.0f;
             const float aDec = pAmpDecay->load()   / 1000.0f;
             const float cDec = pClickDecay->load() / 1000.0f;
-            pitchCoef = (float)std::exp(-1.0 / (pDec * sampleRate));
-            ampCoef   = (float)std::exp(-1.0 / (aDec * sampleRate));
-            clickCoef = (float)std::exp(-1.0 / (cDec * sampleRate));
+            pitchCoef = (float)std::exp(-1.0 / (pDec * sr));
+            ampCoef   = (float)std::exp(-1.0 / (aDec * sr));
+            clickCoef = (float)std::exp(-1.0 / (cDec * sr));
             clickEnv  = 1.0f;
             clickPhase = 0.0f;
             osc.reset();
@@ -100,7 +101,7 @@ void GabberKickGeneratorAudioProcessor::processBlock(juce::AudioBuffer<float>& b
         // Click laag
         float clickSrc = 0.0f;
         if (cType == 1) {
-            clickPhase += clickImpFreq / (float)sampleRate;
+            clickPhase += clickImpFreq / (float)sr;
             if (clickPhase >= 1.0f) clickPhase -= 1.0f;
             clickSrc = clickPhase * 2.0f - 1.0f;
         } else {

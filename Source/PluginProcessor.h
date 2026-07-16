@@ -30,7 +30,7 @@ public:
     bool acceptsMidi() const override { return true; }
     bool producesMidi() const override { return false; }
     bool isMidiEffect() const override { return false; }
-    double getTailLengthSeconds() const override { return 0.6; }
+    double getTailLengthSeconds() const override { return 5.0; } // covers max AMP_DECAY+click tail
     int getNumPrograms() override { return 1; }
     int getCurrentProgram() override { return 0; }
     void setCurrentProgram(int) override {}
@@ -46,7 +46,7 @@ private:
 
     // Envelope-state: audio-thread-only
     float currentPitch = 0.0f, ampEnv = 0.0f, velocity = 0.0f;
-    double sampleRate = 44100.0;
+    std::atomic<double> sampleRate{44100.0}; // prepareToPlay(msg-thread) -> processBlock(audio)
     float pitchCoef = 0.999f, ampCoef = 0.999f;
 
     // Click/transient layer
